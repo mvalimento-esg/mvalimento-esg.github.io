@@ -686,8 +686,9 @@ function checkMatches() {
         };
     } else if (matchCount === 7) {
         bgVideo.loop = false;
-        bgVideo.src = 'vid/08a.webm';
-        
+        bgVideo.src = 'vid/08.webm';
+        updateBackground(8); // Update background image
+
         // HIDE BOARD IMMEDIATELY WHILE 08a PLAYS
         isAnimating = true; // Lock interaction
         gameContainer.style.opacity = '0';
