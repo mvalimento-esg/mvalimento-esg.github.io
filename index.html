@@ -31,8 +31,8 @@
             padding-bottom: 5vh;
             box-sizing: border-box;
             box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            overflow: hidden; /* Ensures video stays inside viewport */
-            transition: background-image 0.1s ease-in-out; /* Fast transition to match video load */
+            overflow: hidden; 
+            transition: background-image 0.1s ease-in-out; 
         }
 
         /* Start Screen Overlay */
@@ -53,21 +53,21 @@
 
         /* Logo Image on Start Screen */
         .start-logo {
-            width: 80%; /* Takes up 80% of viewport width */
+            width: 80%; 
             height: auto;
-            margin-bottom: 25px; /* Overlap effect with button, adjust as needed */
-            z-index: 11; /* Ensure logo is slightly above button if needed */
+            margin-bottom: 25px; 
+            z-index: 11; 
         }
 
         .cta-button {
-            width: 200px; /* Reduced width */
-            height: 100px; /* Reduced height */
+            width: 200px; 
+            height: 100px; 
             background: url('img/STARTMATCHING.webp') no-repeat center center;
             background-size: contain;
             border: none;
             cursor: pointer;
             transition: transform 0.2s ease;
-            text-indent: -9999px; /* Hides any fallback text */
+            text-indent: -9999px; 
             background-color: transparent;
             z-index: 10;
         }
@@ -76,22 +76,27 @@
             transform: scale(1.1);
         }
 
-        /* Background Video Styling */
-        #bg-video {
+        /* Dual Background Video Styling */
+        .bg-video {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
-            z-index: 0; /* Behind UI and Game */
-            opacity: 0; /* Start hidden to show background-image first */
-            transition: opacity 0.2s ease;
+            z-index: 0;
+            opacity: 0;
+            transition: opacity 0.3s ease; /* Smooth cross-fade */
+        }
+
+        .bg-video.active {
+            opacity: 1;
+            z-index: 1;
         }
 
         #game-container { 
             position: relative; 
-            z-index: 2; /* Ensures game is above video */
+            z-index: 2; 
             border: 4px solid #4e4e6d; 
             border-radius: 10px; 
             background: rgba(255, 255, 255, 0.6); 
@@ -100,7 +105,7 @@
             margin-left: 18.5%; 
             margin-right: 18.5%;
             width: auto;
-            transition: opacity 0.8s ease; /* Smooth fade out */
+            transition: opacity 0.8s ease; 
         }
 
         canvas { 
@@ -112,11 +117,10 @@
 
         .ui { 
             position: relative;
-            z-index: 2; /* Ensures UI is above video */
+            z-index: 2; 
             margin-bottom: 15px; 
             text-align: center; 
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-            /* Hidden as per request */
             display: none;
         }
 
@@ -130,7 +134,7 @@
             width: 100%;
             height: 100%;
             z-index: 100;
-            display: none; /* Only shown at the end */
+            display: none; 
             background: transparent;
             cursor: pointer;
         }
@@ -150,9 +154,10 @@
             <source src="audio/RPDR_MainGame.mp3" type="audio/mpeg">
         </audio>
 
-        <video id="bg-video" autoplay muted loop playsinline>
+        <video id="video-a" class="bg-video active" autoplay muted loop playsinline>
             <source src="vid/01.webm" type="video/webm">
         </video>
+        <video id="video-b" class="bg-video" muted playsinline></video>
 
         <div class="ui">
             <div class="score">SCORE: <span id="scoreVal">0</span></div>
@@ -171,9 +176,13 @@ const scoreEl = document.getElementById('scoreVal');
 const gameContainer = document.getElementById('game-container');
 const statusMsg = document.getElementById('status-msg');
 const bgMusic = document.getElementById('bg-music');
-const bgVideo = document.getElementById('bg-video');
+const videoA = document.getElementById('video-a');
+const videoB = document.getElementById('video-b');
 const endHotspot = document.getElementById('end-hotspot');
 const viewport = document.getElementById('viewport');
+
+let currentVideoEl = videoA;
+let nextVideoEl = videoB;
 
 const ROWS = 4;
 const COLS = 5;
@@ -198,14 +207,12 @@ let isAnimating = false;
 let gameStarted = false; 
 let particles = [];
 let musicStarted = false;
-let matchCount = 0; // Track number of matches for video logic
+let matchCount = 0; 
 
-// Hint System Variables
 let lastActionTime = Date.now();
 let activeHint = null;
-const HINT_DELAY = 3000; // Show hint after 3 seconds of inactivity
+const HINT_DELAY = 3000; 
 
-// Store URLs - Update these with actual links
 const APP_STORE_LINK = "https://apps.apple.com/ph/app/rupauls-drag-race-match-queen/id6476321629";
 const PLAY_STORE_LINK = "https://play.google.com/store/apps/details?id=com.eastsidegames.rupaulmatch";
 
@@ -225,15 +232,11 @@ ASSET_SOURCES.forEach((src, index) => {
         if (loadedImages === ASSET_SOURCES.length) {
             initGrid();
             requestAnimationFrame(gameLoop);
+            preloadNextVideo(); // Start preloading immediately
         }
     };
     images[index] = img;
 });
-
-// Avoid flicker: reveal video only when first frame is ready
-bgVideo.oncanplay = () => {
-    bgVideo.style.opacity = '1';
-};
 
 function startGame() {
     gameStarted = true;
@@ -570,27 +573,45 @@ function swap(r1, c1, r2, c2) {
     grid[r2][c2] = temp;
 }
 
-// Function to update the viewport background image
 function updateBackground(index) {
-    viewport.style.backgroundImage = `url('img/0${index}.webp')`;
+    const bgUrl = (typeof index === 'number') ? `img/0${index}.webp` : `img/${index}.webp`;
+    viewport.style.backgroundImage = `url('${bgUrl}')`;
 }
 
-// Function to change video source without black flicker
-function switchVideo(newSrc, isLooping, onEndCallback = null) {
-    // Hide video to show the static background image while loading
-    bgVideo.style.opacity = '0';
-    
-    bgVideo.src = newSrc;
-    bgVideo.loop = isLooping;
-    
-    // Once the new source is ready to play, fade it back in
-    bgVideo.oncanplay = () => {
-        bgVideo.play();
-        bgVideo.style.opacity = '1';
-        bgVideo.oncanplay = null; 
-    };
+// Preload the next video in the sequence
+function preloadNextVideo() {
+    let nextIdx = matchCount + 1;
+    let nextSrc = "";
 
-    bgVideo.onended = onEndCallback;
+    if (nextIdx <= 6) {
+        nextSrc = `vid/0${nextIdx + 1}a.webm`;
+    } else if (matchCount === 6) {
+        nextSrc = 'vid/08.webm';
+    }
+
+    if (nextSrc) {
+        nextVideoEl.src = nextSrc;
+        nextVideoEl.load();
+    }
+}
+
+// Improved switch logic using two video elements to avoid flickering
+function switchVideo(newSrc, isLooping, onEndCallback = null) {
+    // Prep the 'next' video element
+    nextVideoEl.src = newSrc;
+    nextVideoEl.loop = isLooping;
+    nextVideoEl.onended = onEndCallback;
+
+    nextVideoEl.play().then(() => {
+        // Crossfade
+        nextVideoEl.classList.add('active');
+        currentVideoEl.classList.remove('active');
+
+        // Swap references
+        let temp = currentVideoEl;
+        currentVideoEl = nextVideoEl;
+        nextVideoEl = temp;
+    });
 }
 
 function checkMatches() {
@@ -639,7 +660,6 @@ function checkMatches() {
         return false;
     }
 
-    // Handle Match Video Logic & Background Image Logic
     matchCount++;
     
     if (matchCount >= 1 && matchCount <= 6) {
@@ -647,9 +667,10 @@ function checkMatches() {
         updateBackground(nextIdx);
         switchVideo(`vid/0${nextIdx}a.webm`, false, () => {
             switchVideo(`vid/0${nextIdx}.webm`, true);
+            preloadNextVideo(); // Preload for the next match
         });
     } else if (matchCount === 7) {
-        isAnimating = true; // Lock interaction
+        isAnimating = true; 
         gameContainer.style.opacity = '0';
         setTimeout(() => { gameContainer.style.display = 'none'; }, 800);
 
