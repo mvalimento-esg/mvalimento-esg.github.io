@@ -624,9 +624,9 @@ function checkMatches() {
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/02.webm';
-            updateBackground(2); // Update background image
             bgVideo.loop = true;
             bgVideo.play();
+            updateBackground(2); // Update background image
             bgVideo.onended = null;
         };
     } else if (matchCount === 2) {
@@ -635,9 +635,9 @@ function checkMatches() {
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/03.webm';
-            updateBackground(3); // Update background image
             bgVideo.loop = true;
             bgVideo.play();
+            updateBackground(3); // Update background image
             bgVideo.onended = null;
         };
     } else if (matchCount === 3) {
@@ -646,9 +646,9 @@ function checkMatches() {
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/04.webm';
-            updateBackground(4); // Update background image
             bgVideo.loop = true;
             bgVideo.play();
+            updateBackground(4); // Update background image
             bgVideo.onended = null;
         };
     } else if (matchCount === 4) {
@@ -657,9 +657,9 @@ function checkMatches() {
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/05.webm';
-            updateBackground(5); // Update background image
             bgVideo.loop = true;
             bgVideo.play();
+            updateBackground(5); // Update background image
             bgVideo.onended = null;
         };
     } else if (matchCount === 5) {
@@ -668,9 +668,9 @@ function checkMatches() {
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/06.webm';
-            updateBackground(6); // Update background image
             bgVideo.loop = true;
             bgVideo.play();
+            updateBackground(6); // Update background image
             bgVideo.onended = null;
         };
     } else if (matchCount === 6) {
@@ -679,15 +679,14 @@ function checkMatches() {
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/07.webm';
-            updateBackground(7); // Update background image
             bgVideo.loop = true;
             bgVideo.play();
+            updateBackground(7); // Update background image
             bgVideo.onended = null;
         };
     } else if (matchCount === 7) {
         bgVideo.loop = false;
         bgVideo.src = 'vid/08.webm';
-        updateBackground(8); // Update background image
 
         // HIDE BOARD IMMEDIATELY WHILE 08a PLAYS
         isAnimating = true; // Lock interaction
@@ -697,6 +696,7 @@ function checkMatches() {
         }, 800);
 
         bgVideo.play();
+         updateBackground(8); // Update background image
         bgVideo.onended = () => {
             bgVideo.src = 'vid/LogoLoop_start.webm';
             bgVideo.loop = false;
@@ -705,6 +705,7 @@ function checkMatches() {
                 bgVideo.src = 'vid/LogoLoop_loop.webm';
                 bgVideo.loop = true;
                 bgVideo.play();
+                updateBackground('LogoLoop_loop'); // Update background image
                 bgVideo.onended = null;
 
                 // SHOW REDIRECT HOTSPOT HERE
