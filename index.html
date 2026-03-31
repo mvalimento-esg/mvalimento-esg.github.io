@@ -621,67 +621,67 @@ function checkMatches() {
     if (matchCount === 1) {
         bgVideo.loop = false;
         bgVideo.src = 'vid/02a.webm';
+        updateBackground(2); // Update background image
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/02.webm';
             bgVideo.loop = true;
             bgVideo.play();
-            updateBackground(2); // Update background image
             bgVideo.onended = null;
         };
     } else if (matchCount === 2) {
         bgVideo.loop = false;
         bgVideo.src = 'vid/03a.webm';
+        updateBackground(3); // Update background image
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/03.webm';
             bgVideo.loop = true;
             bgVideo.play();
-            updateBackground(3); // Update background image
             bgVideo.onended = null;
         };
     } else if (matchCount === 3) {
         bgVideo.loop = false;
         bgVideo.src = 'vid/04a.webm';
+        updateBackground(4); // Update background image
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/04.webm';
             bgVideo.loop = true;
             bgVideo.play();
-            updateBackground(4); // Update background image
             bgVideo.onended = null;
         };
     } else if (matchCount === 4) {
         bgVideo.loop = false;
         bgVideo.src = 'vid/05a.webm';
+        updateBackground(5); // Update background image
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/05.webm';
             bgVideo.loop = true;
             bgVideo.play();
-            updateBackground(5); // Update background image
             bgVideo.onended = null;
         };
     } else if (matchCount === 5) {
         bgVideo.loop = false;
         bgVideo.src = 'vid/06a.webm';
+        updateBackground(6); // Update background image
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/06.webm';
             bgVideo.loop = true;
             bgVideo.play();
-            updateBackground(6); // Update background image
             bgVideo.onended = null;
         };
     } else if (matchCount === 6) {
         bgVideo.loop = false;
         bgVideo.src = 'vid/07a.webm';
+        updateBackground(7); // Update background image
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/07.webm';
             bgVideo.loop = true;
             bgVideo.play();
-            updateBackground(7); // Update background image
             bgVideo.onended = null;
         };
     } else if (matchCount === 7) {
@@ -700,12 +700,12 @@ function checkMatches() {
         bgVideo.onended = () => {
             bgVideo.src = 'vid/LogoLoop_start.webm';
             bgVideo.loop = false;
+            updateBackground('LogoLoop_loop'); // Update background image
             bgVideo.play();
             bgVideo.onended = () => {
                 bgVideo.src = 'vid/LogoLoop_loop.webm';
                 bgVideo.loop = true;
                 bgVideo.play();
-                updateBackground('LogoLoop_loop'); // Update background image
                 bgVideo.onended = null;
 
                 // SHOW REDIRECT HOTSPOT HERE
