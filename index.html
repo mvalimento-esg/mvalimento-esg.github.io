@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Match-3 Playable Ad</title>
+    <title>RuPaul Match</title>
     <style>
         /* Base reset and center alignment for desktop */
         body { 
@@ -22,7 +22,7 @@
             height: 177.78vw; 
             max-width: 56.25vh; 
             max-height: 100vh;
-            background: url('img/02.webp') no-repeat center center; 
+            background: url('img/01.webp') no-repeat center center; 
             background-size: cover;
             display: flex;
             flex-direction: column;
@@ -32,7 +32,7 @@
             box-sizing: border-box;
             box-shadow: 0 0 50px rgba(0,0,0,0.5);
             overflow: hidden; /* Ensures video stays inside viewport */
-            transition: background-image 0.5s ease-in-out; /* Smooth transition for background updates */
+            transition: background-image 0.1s ease-in-out; /* Fast transition to match video load */
         }
 
         /* Start Screen Overlay */
@@ -85,6 +85,8 @@
             height: 100%;
             object-fit: cover;
             z-index: 0; /* Behind UI and Game */
+            opacity: 0; /* Start hidden to show background-image first */
+            transition: opacity 0.2s ease;
         }
 
         #game-container { 
@@ -228,6 +230,11 @@ ASSET_SOURCES.forEach((src, index) => {
     images[index] = img;
 });
 
+// Avoid flicker: reveal video only when first frame is ready
+bgVideo.oncanplay = () => {
+    bgVideo.style.opacity = '1';
+};
+
 function startGame() {
     gameStarted = true;
     startMusic();
@@ -307,7 +314,6 @@ function initGrid() {
 function ensurePlayable() {
     if (findPotentialMatch() === null) {
         isAnimating = true;
-        // statusMsg update removed
         gameContainer.style.opacity = "0";
         
         setTimeout(() => {
@@ -569,6 +575,24 @@ function updateBackground(index) {
     viewport.style.backgroundImage = `url('img/0${index}.webp')`;
 }
 
+// Function to change video source without black flicker
+function switchVideo(newSrc, isLooping, onEndCallback = null) {
+    // Hide video to show the static background image while loading
+    bgVideo.style.opacity = '0';
+    
+    bgVideo.src = newSrc;
+    bgVideo.loop = isLooping;
+    
+    // Once the new source is ready to play, fade it back in
+    bgVideo.oncanplay = () => {
+        bgVideo.play();
+        bgVideo.style.opacity = '1';
+        bgVideo.oncanplay = null; 
+    };
+
+    bgVideo.onended = onEndCallback;
+}
+
 function checkMatches() {
     let toRemove = new Set();
     let bombsToCreate = [];
@@ -618,101 +642,26 @@ function checkMatches() {
     // Handle Match Video Logic & Background Image Logic
     matchCount++;
     
-    if (matchCount === 1) {
-        bgVideo.loop = false;
-        bgVideo.src = 'vid/02a.webm';
-        bgVideo.play();
-        bgVideo.onended = () => {
-            bgVideo.src = 'vid/02.webm';
-            bgVideo.loop = true;
-            bgVideo.play();
-            bgVideo.onended = null;
-            updateBackground(3); // Update background image
-        };
-    } else if (matchCount === 2) {
-        bgVideo.loop = false;
-        bgVideo.src = 'vid/03a.webm';
-        bgVideo.play();
-        bgVideo.onended = () => {
-            bgVideo.src = 'vid/03.webm';
-            bgVideo.loop = true;
-            bgVideo.play();
-            bgVideo.onended = null;
-            updateBackground(4); // Update background image
-        };
-    } else if (matchCount === 3) {
-        bgVideo.loop = false;
-        bgVideo.src = 'vid/04a.webm';
-        bgVideo.play();
-        bgVideo.onended = () => {
-            bgVideo.src = 'vid/04.webm';
-            bgVideo.loop = true;
-            bgVideo.play();
-            bgVideo.onended = null;
-            updateBackground(5); // Update background image
-        };
-    } else if (matchCount === 4) {
-        bgVideo.loop = false;
-        bgVideo.src = 'vid/05a.webm';
-        bgVideo.play();
-        bgVideo.onended = () => {
-            bgVideo.src = 'vid/05.webm';
-            bgVideo.loop = true;
-            bgVideo.play();
-            bgVideo.onended = null;
-            updateBackground(6); // Update background image
-        };
-    } else if (matchCount === 5) {
-        bgVideo.loop = false;
-        bgVideo.src = 'vid/06a.webm';
-        bgVideo.play();
-        bgVideo.onended = () => {
-            bgVideo.src = 'vid/06.webm';
-            bgVideo.loop = true;
-            bgVideo.play();
-            bgVideo.onended = null;
-            updateBackground(7); // Update background image
-        };
-    } else if (matchCount === 6) {
-        bgVideo.loop = false;
-        bgVideo.src = 'vid/07a.webm';
-        bgVideo.play();
-        bgVideo.onended = () => {
-            bgVideo.src = 'vid/07.webm';
-            bgVideo.loop = true;
-            bgVideo.play();
-            bgVideo.onended = null;
-            updateBackground(8); // Update background image
-        };
+    if (matchCount >= 1 && matchCount <= 6) {
+        const nextIdx = matchCount + 1;
+        updateBackground(nextIdx);
+        switchVideo(`vid/0${nextIdx}a.webm`, false, () => {
+            switchVideo(`vid/0${nextIdx}.webm`, true);
+        });
     } else if (matchCount === 7) {
-        bgVideo.loop = false;
-        bgVideo.src = 'vid/08.webm';
-
-        // HIDE BOARD IMMEDIATELY WHILE 08a PLAYS
         isAnimating = true; // Lock interaction
         gameContainer.style.opacity = '0';
-        setTimeout(() => {
-            gameContainer.style.display = 'none';
-        }, 800);
+        setTimeout(() => { gameContainer.style.display = 'none'; }, 800);
 
-        bgVideo.play();
-        updateBackground('LogoLoop_loop'); // Update background image
-        bgVideo.onended = () => {
-            bgVideo.src = 'vid/LogoLoop_start.webm';
-            bgVideo.loop = false;
-            bgVideo.play();
-            bgVideo.onended = () => {
-                bgVideo.src = 'vid/LogoLoop_loop.webm';
-                bgVideo.loop = true;
-                bgVideo.play();
-                bgVideo.onended = null;
-                updateBackground(8); // Update background image
-
-                // SHOW REDIRECT HOTSPOT HERE
+        updateBackground(8);
+        switchVideo('vid/08.webm', false, () => {
+            updateBackground('LogoLoop_loop');
+            switchVideo('vid/LogoLoop_start.webm', false, () => {
+                switchVideo('vid/LogoLoop_loop.webm', true);
                 endHotspot.href = getStoreLink();
                 endHotspot.style.display = 'block';
-            };
-        };
+            });
+        });
     }
 
     let hasBombTriggered = false;
