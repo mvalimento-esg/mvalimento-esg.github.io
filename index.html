@@ -22,7 +22,7 @@
             height: 177.78vw; 
             max-width: 56.25vh; 
             max-height: 100vh;
-            background: url('img/00.webp') no-repeat center center; 
+            background: url('img/01.webp') no-repeat center center; 
             background-size: cover;
             display: flex;
             flex-direction: column;
@@ -32,6 +32,7 @@
             box-sizing: border-box;
             box-shadow: 0 0 50px rgba(0,0,0,0.5);
             overflow: hidden; /* Ensures video stays inside viewport */
+            transition: background-image 0.5s ease-in-out; /* Smooth transition for background updates */
         }
 
         /* Start Screen Overlay */
@@ -170,6 +171,7 @@ const statusMsg = document.getElementById('status-msg');
 const bgMusic = document.getElementById('bg-music');
 const bgVideo = document.getElementById('bg-video');
 const endHotspot = document.getElementById('end-hotspot');
+const viewport = document.getElementById('viewport');
 
 const ROWS = 4;
 const COLS = 5;
@@ -562,6 +564,11 @@ function swap(r1, c1, r2, c2) {
     grid[r2][c2] = temp;
 }
 
+// Function to update the viewport background image
+function updateBackground(index) {
+    viewport.style.backgroundImage = `url('img/0${index}.webp')`;
+}
+
 function checkMatches() {
     let toRemove = new Set();
     let bombsToCreate = [];
@@ -608,7 +615,7 @@ function checkMatches() {
         return false;
     }
 
-    // Handle Match Video Logic
+    // Handle Match Video Logic & Background Image Logic
     matchCount++;
     
     if (matchCount === 1) {
@@ -617,6 +624,7 @@ function checkMatches() {
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/02.webm';
+            updateBackground(2); // Update background image
             bgVideo.loop = true;
             bgVideo.play();
             bgVideo.onended = null;
@@ -627,6 +635,7 @@ function checkMatches() {
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/03.webm';
+            updateBackground(3); // Update background image
             bgVideo.loop = true;
             bgVideo.play();
             bgVideo.onended = null;
@@ -637,6 +646,7 @@ function checkMatches() {
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/04.webm';
+            updateBackground(4); // Update background image
             bgVideo.loop = true;
             bgVideo.play();
             bgVideo.onended = null;
@@ -647,6 +657,7 @@ function checkMatches() {
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/05.webm';
+            updateBackground(5); // Update background image
             bgVideo.loop = true;
             bgVideo.play();
             bgVideo.onended = null;
@@ -657,6 +668,7 @@ function checkMatches() {
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/06.webm';
+            updateBackground(6); // Update background image
             bgVideo.loop = true;
             bgVideo.play();
             bgVideo.onended = null;
@@ -667,6 +679,7 @@ function checkMatches() {
         bgVideo.play();
         bgVideo.onended = () => {
             bgVideo.src = 'vid/07.webm';
+            updateBackground(7); // Update background image
             bgVideo.loop = true;
             bgVideo.play();
             bgVideo.onended = null;
