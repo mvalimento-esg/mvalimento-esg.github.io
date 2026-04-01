@@ -210,6 +210,10 @@ const COLORS = ['#FF4136', '#2ECC40', '#0074D9', '#FFDC00', '#B10DC9'];
 const images = [];
 let loadedImages = 0;
 
+// Load the Bomb Asset
+const bombImg = new Image();
+bombImg.src = 'img/bomb.webp';
+
 let grid = []; 
 let score = 0;
 let swipeStart = null;
@@ -345,19 +349,16 @@ function drawTile(x, y, colorIndex, isBomb, scale = 1, alpha = 1) {
     ctx.translate(x + TILE_SIZE / 2, y + TILE_SIZE / 2);
     ctx.scale(scale, scale);
     ctx.translate(-(TILE_SIZE / 2), -(TILE_SIZE / 2));
-    const img = images[colorIndex];
-    if (img) ctx.drawImage(img, 5, 5, TILE_SIZE - 10, TILE_SIZE - 10);
+    
+    // Logic updated: If it is a bomb, draw ONLY the bomb. 
+    // Otherwise, draw the regular tile image.
     if (isBomb) {
-        ctx.strokeStyle = "white";
-        ctx.lineWidth = 6;
-        ctx.beginPath();
-        ctx.arc(TILE_SIZE/2, TILE_SIZE/2, TILE_SIZE/2 - 10, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.fillStyle = "white";
-        ctx.font = "bold 24px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("BOMB", TILE_SIZE/2, TILE_SIZE/1.6);
+        ctx.drawImage(bombImg, 5, 5, TILE_SIZE - 10, TILE_SIZE - 10);
+    } else {
+        const img = images[colorIndex];
+        if (img) ctx.drawImage(img, 5, 5, TILE_SIZE - 10, TILE_SIZE - 10);
     }
+    
     ctx.restore();
 }
 
@@ -374,7 +375,7 @@ function draw(animatingTiles = null, fallingTiles = null, explodingTiles = null)
     const pulse = 1 + Math.sin(Date.now() / 200) * 0.05;
 
     for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; r < ROWS && c < COLS; c++) {
+        for (let c = 0; c < COLS; c++) {
             let x = c * TILE_SIZE;
             let y = r * TILE_SIZE;
             if (animatingTiles && ((r === animatingTiles.r1 && c === animatingTiles.c1) || (r === animatingTiles.r2 && c === animatingTiles.c2))) continue;
@@ -429,6 +430,7 @@ function resetHint() {
 function findPotentialMatch() {
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS - 1; c++) {
+            // Bomb logic updated: Bomb only matches if it's moved into a standard 3-match position
             swap(r, c, r, c + 1);
             const matches = findMatches();
             swap(r, c, r, c + 1); 
@@ -453,7 +455,8 @@ function findMatches() {
         for (let c = 0; c < COLS; c++) {
             let check = (c === COLS - 1);
             if (!check) {
-                if (grid[r][c] && grid[r][c+1] && grid[r][c].color === grid[r][c+1].color) matchLen++;
+                // Bomb condition: A bomb counts as a match for the neighboring color
+                if (grid[r][c] && grid[r][c+1] && (grid[r][c].color === grid[r][c+1].color || grid[r][c].isBomb || grid[r][c+1].isBomb)) matchLen++;
                 else check = true;
             }
             if (check) {
@@ -467,7 +470,7 @@ function findMatches() {
         for (let r = 0; r < ROWS; r++) {
             let check = (r === ROWS - 1);
             if (!check) {
-                if (grid[r][c] && grid[r+1][c] && grid[r][c].color === grid[r+1][c].color) matchLen++;
+                if (grid[r][c] && grid[r+1][c] && (grid[r][c].color === grid[r+1][c].color || grid[r][c].isBomb || grid[r+1][c].isBomb)) matchLen++;
                 else check = true;
             }
             if (check) {
@@ -571,6 +574,7 @@ const endAction = (e) => {
     if (r2 >= 0 && r2 < ROWS && c2 >= 0 && c2 < COLS && (r1 !== r2 || c1 !== c2)) {
         animateSwap(r1, c1, r2, c2, () => {
             const hasMatches = checkMatches();
+            // If swap didn't result in a match (even if it's a bomb), swap back
             if (!hasMatches) {
                 setTimeout(() => animateSwap(r1, c1, r2, c2), 100);
             }
@@ -601,9 +605,9 @@ function preloadNextVideo() {
     let nextSrc = "";
 
     // Adjusting preload logic for 5-step limit
-    if (nextIdx < 5) {
+    if (nextIdx < 4) {
         nextSrc = `vid/0${nextIdx + 1}a.mp4`;
-    } else if (matchCount === 4) {
+    } else if (matchCount === 3) {
         nextSrc = 'vid/05.mp4';
     }
 
@@ -637,19 +641,20 @@ function checkMatches() {
     let bombsToCreate = [];
     let explosionData = [];
 
+    const matchesFromGrid = findMatches();
+    matchesFromGrid.forEach(m => toRemove.add(m));
+
     for (let r = 0; r < ROWS; r++) {
         let matchLen = 1;
         for (let c = 0; c < COLS; c++) {
             let check = (c === COLS - 1);
             if (!check) {
-                if (grid[r][c] && grid[r][c+1] && grid[r][c].color === grid[r][c+1].color) matchLen++;
+                // Bomb logic for creation: must be same color (isBomb doesn't help create a new bomb)
+                if (grid[r][c] && grid[r][c+1] && grid[r][c].color === grid[r][c+1].color && !grid[r][c].isBomb && !grid[r][c+1].isBomb) matchLen++;
                 else check = true;
             }
             if (check) {
-                if (matchLen >= 3) {
-                    for (let i = 0; i < matchLen; i++) toRemove.add(`${r},${c-i}`);
-                    if (matchLen >= 4) bombsToCreate.push({r, c: c - Math.floor(matchLen/2), color: grid[r][c].color});
-                }
+                if (matchLen >= 4) bombsToCreate.push({r, c: c - Math.floor(matchLen/2), color: grid[r][c].color});
                 matchLen = 1;
             }
         }
@@ -659,14 +664,11 @@ function checkMatches() {
         for (let r = 0; r < ROWS; r++) {
             let check = (r === ROWS - 1);
             if (!check) {
-                if (grid[r][c] && grid[r+1][c] && grid[r][c].color === grid[r+1][c].color) matchLen++;
+                if (grid[r][c] && grid[r+1][c] && grid[r][c].color === grid[r+1][c].color && !grid[r][c].isBomb && !grid[r+1][c].isBomb) matchLen++;
                 else check = true;
             }
             if (check) {
-                if (matchLen >= 3) {
-                    for (let i = 0; i < matchLen; i++) toRemove.add(`${r-i},${c}`);
-                    if (matchLen >= 4) bombsToCreate.push({r: r - Math.floor(matchLen/2), c, color: grid[r][c].color});
-                }
+                if (matchLen >= 4) bombsToCreate.push({r: r - Math.floor(matchLen/2), c, color: grid[r][c].color});
                 matchLen = 1;
             }
         }
@@ -687,21 +689,18 @@ function checkMatches() {
     matchCount++;
     
     // UPDATED LOGIC: Decrease to 5 steps then go straight to LogoLoop
-    if (matchCount < 5) {
+    if (matchCount < 4) {
         const nextIdx = matchCount + 1;
-        updateBackground(nextIdx);
         switchVideo(`vid/0${nextIdx}a.mp4`, false, () => {
             switchVideo(`vid/0${nextIdx}.mp4`, true);
             preloadNextVideo();
         });
-    } else if (matchCount === 5) {
+    } else if (matchCount === 4) {
         isAnimating = true; 
         gameContainer.style.opacity = '0';
         setTimeout(() => { gameContainer.style.display = 'none'; }, 800);
 
-        updateBackground(5);
         switchVideo('vid/05.mp4', false, () => {
-            updateBackground('LogoLoop_loop');
                 switchVideo('vid/LogoLoop_loop.mp4', true);
                 endHotspot.href = getStoreLink();
                 endHotspot.style.display = 'block';
@@ -730,7 +729,7 @@ function checkMatches() {
 
     const processRemoval = () => {
         score += toRemove.size * 10;
-        toRemove.forEach(pos => { const [r, c] = pos.split(',').map(Number); grid[r][c] = null; });
+        toRemove.forEach(pos => { const [r, c] = pos.split(',').map(Number); if(grid[r]) grid[r][c] = null; });
         bombsToCreate.forEach(b => { grid[b.r][b.c] = { color: b.color, isBomb: true }; });
 
         let fallingTiles = [];
