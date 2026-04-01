@@ -3,68 +3,36 @@
 <head>
     <title>RuPaul Match</title>
     <style>
-        /* Base reset and center alignment */
+        /* Base reset and center alignment for desktop */
         body { 
             background: #000; 
-            color: white; 
-            font-family: sans-serif; 
+            color: white; font-family: sans-serif; 
             margin: 0; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
             height: 100vh; 
-            width: 100vw;
             overflow: hidden; 
         }
 
-        /* Responsive Container */
+        /* The 1080x1920 Container */
         #viewport {
             position: relative;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 177.78vw; 
+            max-width: 56.25vh; 
+            max-height: 100vh;
+            /* Removed initial background image to prevent flash */
             background: #000; 
             display: flex;
-            flex-direction: column; /* Default portrait */
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-end;
+            padding-bottom: 5vh;
             box-sizing: border-box;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
             overflow: hidden; 
             transition: background-image 0.1s ease-in-out; 
-        }
-
-        /* LANDSCAPE SPECIFIC ADJUSTMENTS */
-        @media (orientation: landscape) {
-            #viewport {
-                flex-direction: row; /* Side by side */
-                justify-content: space-between;
-                padding-bottom: 0;
-            }
-
-            /* Video takes left 50% */
-            .bg-video {
-                position: relative !important; /* Overriding absolute for side-by-side */
-                width: 50% !important;
-                height: 100% !important;
-                object-fit: cover;
-            }
-
-            /* Game container on the right */
-            #game-container {
-                position: relative;
-                margin-left: 20px !important;
-                margin-right: 40px !important; /* Margin so it doesn't touch the right edge */
-                flex: 1;
-                display: flex;
-                justify-content: center;
-                max-width: 45%; /* Keep it contained */
-            }
-
-            .ui {
-                position: absolute;
-                top: 10px;
-                right: 50px;
-                z-index: 5;
-            }
         }
 
         /* Start Screen Overlay */
@@ -83,9 +51,9 @@
             transition: opacity 0.5s ease;
         }
 
+        /* Logo Image on Start Screen */
         .start-logo {
-            width: 60%; 
-            max-width: 400px;
+            width: 80%; 
             height: auto;
             margin-bottom: 25px; 
             z-index: 11; 
@@ -104,7 +72,9 @@
             z-index: 10;
         }
 
-        .cta-button:hover { transform: scale(1.1); }
+        .cta-button:hover {
+            transform: scale(1.1);
+        }
 
         /* Dual Background Video Styling */
         .bg-video {
@@ -116,7 +86,7 @@
             object-fit: cover;
             z-index: 0;
             opacity: 0;
-            transition: opacity 0.3s ease; 
+            transition: opacity 0.3s ease; /* Smooth cross-fade */
         }
 
         .bg-video.active {
@@ -132,29 +102,31 @@
             background: rgba(255, 255, 255, 0.6); 
             padding: 5px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-left: 18.5%; 
+            margin-right: 18.5%;
             width: auto;
-            max-width: 90%;
             transition: opacity 0.8s ease; 
         }
 
         canvas { 
             cursor: pointer; 
             touch-action: none; 
-            display: block;
-            width: 100%; /* Make canvas responsive to container */
+            max-width: 100%; 
             height: auto; 
         }
 
         .ui { 
             position: relative;
             z-index: 2; 
-            margin-bottom: 10px; 
+            margin-bottom: 15px; 
             text-align: center; 
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            display: none;
         }
 
-        .score { font-size: 24px; font-weight: bold; color: #e94560; }
+        .score { font-size: 28px; font-weight: bold; color: #e94560; }
 
+        /* End Screen Hotspot */
         #end-hotspot {
             position: absolute;
             top: 0;
@@ -191,24 +163,21 @@
         </audio>
 
         <video id="video-a" class="bg-video active" autoplay muted loop playsinline>
-            <source src="vid/01.mp4" type="video/mp4">
+            <source src="vid/01.mp4" type="video/webm">
         </video>
         <video id="video-b" class="bg-video" muted playsinline></video>
 
-        <div id="game-side" style="display: flex; flex-direction: column; align-items: center;">
-            <div class="ui">
-                <div class="score">SCORE: <span id="scoreVal">0</span></div>
-                <div id="status-msg" style="font-size: 14px; opacity: 0.9; font-weight: bold;">Match 4 to create a BOMB!</div>
-            </div>
+        <div class="ui">
+            <div class="score">SCORE: <span id="scoreVal">0</span></div>
+            <div id="status-msg" style="font-size: 14px; opacity: 0.9; font-weight: bold;">Match 4 to create a BOMB!</div>
+        </div>
 
-            <div id="game-container">
-                <canvas id="gameCanvas" width="680" height="544"></canvas>
-            </div>
+        <div id="game-container">
+            <canvas id="gameCanvas" width="680" height="544"></canvas>
         </div>
     </div>
 
 <script>
-// Logic remains identical to original to ensure no functionality is removed
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('scoreVal');
@@ -273,7 +242,7 @@ ASSET_SOURCES.forEach((src, index) => {
         if (loadedImages === ASSET_SOURCES.length) {
             initGrid();
             requestAnimationFrame(gameLoop);
-            preloadNextVideo();
+            preloadNextVideo(); // Start preloading immediately
         }
     };
     images[index] = img;
@@ -528,10 +497,13 @@ function animateExplosion(tiles, callback) {
 function animateSwap(r1, c1, r2, c2, callback) {
     isAnimating = true;
     resetHint();
+    
+    // Play move sound effect
     if (moveSound) {
         moveSound.currentTime = 0;
         moveSound.play().catch(e => console.log("Audio play blocked"));
     }
+
     const duration = 200;
     const startTime = performance.now();
     function step(now) {
@@ -618,29 +590,42 @@ function swap(r1, c1, r2, c2) {
     grid[r2][c2] = temp;
 }
 
-function updateBackground(index) {}
+// Function disabled to prevent image flashing in background
+function updateBackground(index) {
+    /* Background images removed to prevent flicker during video transitions */
+}
 
+// Preload the next video in the sequence
 function preloadNextVideo() {
     let nextIdx = matchCount + 1;
     let nextSrc = "";
+
+    // Adjusting preload logic for 5-step limit
     if (nextIdx < 5) {
         nextSrc = `vid/0${nextIdx + 1}a.mp4`;
     } else if (matchCount === 4) {
         nextSrc = 'vid/05.mp4';
     }
+
     if (nextSrc) {
         nextVideoEl.src = nextSrc;
         nextVideoEl.load();
     }
 }
 
+// Improved switch logic using two video elements to avoid flickering
 function switchVideo(newSrc, isLooping, onEndCallback = null) {
+    // Prep the 'next' video element
     nextVideoEl.src = newSrc;
     nextVideoEl.loop = isLooping;
     nextVideoEl.onended = onEndCallback;
+
     nextVideoEl.play().then(() => {
+        // Crossfade
         nextVideoEl.classList.add('active');
         currentVideoEl.classList.remove('active');
+
+        // Swap references
         let temp = currentVideoEl;
         currentVideoEl = nextVideoEl;
         nextVideoEl = temp;
@@ -693,6 +678,7 @@ function checkMatches() {
         return false;
     }
 
+    // Play match sound effect
     if (matchSound) {
         matchSound.currentTime = 0;
         matchSound.play().catch(e => console.log("Audio play blocked"));
@@ -700,6 +686,7 @@ function checkMatches() {
 
     matchCount++;
     
+    // UPDATED LOGIC: Decrease to 5 steps then go straight to LogoLoop
     if (matchCount < 5) {
         const nextIdx = matchCount + 1;
         updateBackground(nextIdx);
@@ -709,8 +696,9 @@ function checkMatches() {
         });
     } else if (matchCount === 5) {
         isAnimating = true; 
-        document.getElementById('game-side').style.opacity = '0';
-        setTimeout(() => { document.getElementById('game-side').style.display = 'none'; }, 800);
+        gameContainer.style.opacity = '0';
+        setTimeout(() => { gameContainer.style.display = 'none'; }, 800);
+
         updateBackground(5);
         switchVideo('vid/05.mp4', false, () => {
             updateBackground('LogoLoop_loop');
@@ -742,7 +730,6 @@ function checkMatches() {
 
     const processRemoval = () => {
         score += toRemove.size * 10;
-        scoreEl.innerText = score;
         toRemove.forEach(pos => { const [r, c] = pos.split(',').map(Number); grid[r][c] = null; });
         bombsToCreate.forEach(b => { grid[b.r][b.c] = { color: b.color, isBomb: true }; });
 
