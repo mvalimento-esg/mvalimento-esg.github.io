@@ -22,8 +22,8 @@
             height: 177.78vw; 
             max-width: 56.25vh; 
             max-height: 100vh;
-            background: url('img/01.webp') no-repeat center center; 
-            background-size: cover;
+            /* Removed initial background image to prevent flash */
+            background: #000; 
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -151,11 +151,19 @@
         </div>
 
         <audio id="bg-music" loop>
-            <source src="audio/RPDR_MainGame.mp3" type="audio/mpeg">
+            <source src="audio/RPDR_MainGame_compressed.mp3" type="audio/mpeg">
+        </audio>
+        
+        <audio id="move-sound">
+            <source src="audio/move.mp3" type="audio/mpeg">
+        </audio>
+
+        <audio id="match-sound">
+            <source src="audio/matched.mp3" type="audio/mpeg">
         </audio>
 
         <video id="video-a" class="bg-video active" autoplay muted loop playsinline>
-            <source src="vid/01.webm" type="video/webm">
+            <source src="vid/01.mp4" type="video/webm">
         </video>
         <video id="video-b" class="bg-video" muted playsinline></video>
 
@@ -176,6 +184,8 @@ const scoreEl = document.getElementById('scoreVal');
 const gameContainer = document.getElementById('game-container');
 const statusMsg = document.getElementById('status-msg');
 const bgMusic = document.getElementById('bg-music');
+const moveSound = document.getElementById('move-sound');
+const matchSound = document.getElementById('match-sound');
 const videoA = document.getElementById('video-a');
 const videoB = document.getElementById('video-b');
 const endHotspot = document.getElementById('end-hotspot');
@@ -487,6 +497,13 @@ function animateExplosion(tiles, callback) {
 function animateSwap(r1, c1, r2, c2, callback) {
     isAnimating = true;
     resetHint();
+    
+    // Play move sound effect
+    if (moveSound) {
+        moveSound.currentTime = 0;
+        moveSound.play().catch(e => console.log("Audio play blocked"));
+    }
+
     const duration = 200;
     const startTime = performance.now();
     function step(now) {
@@ -573,9 +590,9 @@ function swap(r1, c1, r2, c2) {
     grid[r2][c2] = temp;
 }
 
+// Function disabled to prevent image flashing in background
 function updateBackground(index) {
-    const bgUrl = (typeof index === 'number') ? `img/0${index}.webp` : `img/${index}.webp`;
-    viewport.style.backgroundImage = `url('${bgUrl}')`;
+    /* Background images removed to prevent flicker during video transitions */
 }
 
 // Preload the next video in the sequence
@@ -583,10 +600,11 @@ function preloadNextVideo() {
     let nextIdx = matchCount + 1;
     let nextSrc = "";
 
-    if (nextIdx <= 6) {
-        nextSrc = `vid/0${nextIdx + 1}a.webm`;
-    } else if (matchCount === 6) {
-        nextSrc = 'vid/08.webm';
+    // Adjusting preload logic for 5-step limit
+    if (nextIdx < 5) {
+        nextSrc = `vid/0${nextIdx + 1}a.mp4`;
+    } else if (matchCount === 4) {
+        nextSrc = 'vid/05.mp4';
     }
 
     if (nextSrc) {
@@ -660,28 +678,33 @@ function checkMatches() {
         return false;
     }
 
+    // Play match sound effect
+    if (matchSound) {
+        matchSound.currentTime = 0;
+        matchSound.play().catch(e => console.log("Audio play blocked"));
+    }
+
     matchCount++;
     
-    if (matchCount >= 1 && matchCount <= 6) {
+    // UPDATED LOGIC: Decrease to 5 steps then go straight to LogoLoop
+    if (matchCount < 5) {
         const nextIdx = matchCount + 1;
         updateBackground(nextIdx);
-        switchVideo(`vid/0${nextIdx}a.webm`, false, () => {
-            switchVideo(`vid/0${nextIdx}.webm`, true);
-            preloadNextVideo(); // Preload for the next match
+        switchVideo(`vid/0${nextIdx}a.mp4`, false, () => {
+            switchVideo(`vid/0${nextIdx}.mp4`, true);
+            preloadNextVideo();
         });
-    } else if (matchCount === 7) {
+    } else if (matchCount === 5) {
         isAnimating = true; 
         gameContainer.style.opacity = '0';
         setTimeout(() => { gameContainer.style.display = 'none'; }, 800);
 
-        updateBackground(8);
-        switchVideo('vid/08.webm', false, () => {
+        updateBackground(5);
+        switchVideo('vid/05.mp4', false, () => {
             updateBackground('LogoLoop_loop');
-            switchVideo('vid/LogoLoop_start.webm', false, () => {
-                switchVideo('vid/LogoLoop_loop.webm', true);
+                switchVideo('vid/LogoLoop_loop.mp4', true);
                 endHotspot.href = getStoreLink();
                 endHotspot.style.display = 'block';
-            });
         });
     }
 
