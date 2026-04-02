@@ -94,6 +94,20 @@
             z-index: 1;
         }
 
+        /* Initial Background Image (only visible at start) */
+        #bg-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('img/01.webp'); /* Replace with the actual image file */
+            background-size: cover;
+            background-position: center;
+            z-index: -1; /* Place below everything, even videos, initially */
+            transition: opacity 0.5s ease;
+        }
+
         #game-container { 
             position: relative; 
             z-index: 2; 
@@ -143,6 +157,8 @@
 <body>
 
     <div id="viewport">
+        <div id="bg-image"></div> 
+
         <a id="end-hotspot" href="#" target="_blank"></a>
 
         <div id="start-overlay">
@@ -188,6 +204,7 @@ const moveSound = document.getElementById('move-sound');
 const matchSound = document.getElementById('match-sound');
 const videoA = document.getElementById('video-a');
 const videoB = document.getElementById('video-b');
+const bgImage = document.getElementById('bg-image'); // Get background image reference
 const endHotspot = document.getElementById('end-hotspot');
 const viewport = document.getElementById('viewport');
 
@@ -256,6 +273,13 @@ function startGame() {
     gameStarted = true;
     startMusic();
     document.getElementById('start-overlay').style.opacity = '0';
+    // Remove background image with transition
+    if (bgImage) {
+        bgImage.style.opacity = '0';
+        setTimeout(() => {
+            bgImage.style.display = 'none';
+        }, 500); // Wait for transition before hiding
+    }
     setTimeout(() => {
         document.getElementById('start-overlay').style.display = 'none';
     }, 500);
