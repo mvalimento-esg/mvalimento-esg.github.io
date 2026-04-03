@@ -5,14 +5,14 @@
     <style>
         /* Base reset and center alignment for desktop */
         body { 
-            /* UPDATED: Changed background from #000 to transparent/none to see bg-image */
             background: transparent; 
             color: white; font-family: sans-serif; 
             margin: 0; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            height: 100vh; 
+            /* Using dvh (dynamic viewport height) for better mobile browser support */
+            height: 100dvh; 
             width: 100vw;
             overflow: hidden; 
         }
@@ -21,30 +21,39 @@
         #viewport {
             position: relative;
             width: 100vw;
-            height: 177.78vw; 
-            max-width: 56.25vh; 
-            max-height: 100vh;
-            background: transparent; 
+            height: 100dvh; 
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-end;
-            padding-bottom: 5vh;
+            justify-content: center;
             box-sizing: border-box;
             box-shadow: 0 0 50px rgba(0,0,0,0.5);
             overflow: hidden; 
-            transition: background-image 0.1s ease-in-out; 
+            transition: all 0.3s ease-in-out; 
         }
 
-        /* LANDSCAPE ADJUSTMENTS */
+        /* PORTRAIT SPECIFIC (Default) */
+        @media (orientation: portrait) {
+            #viewport {
+                flex-direction: column;
+                justify-content: flex-end;
+                padding-bottom: 5vh;
+            }
+            #game-container {
+                margin: 0 auto 20px auto;
+            }
+            .start-logo {
+                width: 60%;
+            }
+        }
+
+        /* LANDSCAPE ADJUSTMENTS - Triggers automatically on rotation */
         @media (orientation: landscape) {
             #viewport {
-                flex-direction: row; /* Side by side */
-                max-width: 100vw;    /* Allow full width */
-                max-height: 100vh;
+                flex-direction: row; 
                 width: 100vw;
-                height: 100vh;
-                justify-content: flex-end; /* Align content to the right */
+                height: 100dvh;
+                justify-content: flex-end; 
                 padding-bottom: 0;
                 align-items: center;
             }
@@ -54,19 +63,23 @@
                 width: 50% !important;
                 height: 100% !important;
                 left: 0 !important;
+                top: 0 !important;
                 object-fit: cover;
             }
 
-            /* UPDATED: Ensure background image stays fullscreen and behind in landscape */
+            /* Ensure background image stays fullscreen and behind in landscape */
             #bg-image {
                 width: 100% !important;
+                height: 100% !important;
                 left: 0 !important;
+                top: 0 !important;
             }
 
             /* UI and Game Board container for landscape */
             #game-container {
                 margin-left: 0 !important;
-                margin-right: 150px !important; /* Specific 50px margin requested */
+                margin-right: 5% !important; 
+                transform: scale(0.8); /* Scale down slightly to fit landscape screens */
                 width: auto !important;       
                 max-width: 500px;
                 position: relative;
@@ -75,6 +88,11 @@
             #start-overlay {
                 width: 100%;
                 z-index: 100;
+            }
+
+            .start-logo {
+                width: 25% !important;
+                margin-bottom: 10px;
             }
         }
 
@@ -85,7 +103,6 @@
             left: 0;
             width: 100%;
             height: 100%;
-            /* UPDATED: Semi-transparent instead of solid black to keep bg-image visible */
             background: rgba(0, 0, 0, 0.4); 
             z-index: 10;
             display: flex;
@@ -95,7 +112,7 @@
             transition: opacity 0.5s ease;
         }
 
-        /* Logo Image on Start Screen - UPDATED: Scaled down to 50% (80% -> 40%) */
+        /* Logo Image on Start Screen */
         .start-logo {
             width: 40%; 
             height: auto;
@@ -137,18 +154,18 @@
             opacity: 1;
         }
 
-        /* UPDATED: Initial Background Image - Forced to full viewport height/width */
+        /* Initial Background Image */
         #bg-image {
-            position: fixed; /* Fixed ensures it covers the device screen regardless of scrolling */
+            position: fixed; 
             top: 0;
             left: 0;
             width: 100vw;
-            height: 100vh;
+            height: 100dvh;
             background-image: url('img/01.webp'); 
             background-size: cover; 
             background-position: center;
             background-repeat: no-repeat;
-            z-index: -1; /* Placed behind everything */
+            z-index: -1; 
             opacity: 1; 
         }
 
@@ -160,10 +177,8 @@
             background: rgba(255, 255, 255, 0.6); 
             padding: 5px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            margin-left: auto; 
-            margin-right: 50px; 
             width: fit-content;
-            transition: opacity 0.8s ease; 
+            transition: opacity 0.8s ease, transform 0.3s ease; 
         }
 
         canvas { 
@@ -174,7 +189,6 @@
             display: block;
         }
 
-        /* End Screen Hotspot */
         #end-hotspot {
             position: absolute;
             top: 0;
@@ -223,7 +237,7 @@
     </div>
 
 <script>
-// JavaScript Logic remains untouched as requested
+// Logic remains untouched as requested
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const gameContainer = document.getElementById('game-container');
