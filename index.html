@@ -226,10 +226,10 @@
             <source src="audio/matched.mp3" type="audio/mpeg">
         </audio>
 
-        <video id="video-a" class="bg-video active" autoplay muted loop playsinline>
+        <video id="video-a" class="bg-video active" autoplay muted loop playsinline webkit-playsinline>
             <source src="vid/01.mp4" type="video/webm">
         </video>
-        <video id="video-b" class="bg-video" muted playsinline></video>
+        <video id="video-b" class="bg-video" muted playsinline webkit-playsinline></video>
 
         <div id="game-container">
             <canvas id="gameCanvas" width="680" height="544"></canvas>
@@ -313,6 +313,11 @@ ASSET_SOURCES.forEach((src, index) => {
 function startGame() {
     gameStarted = true;
     startMusic();
+    
+    // Safari Fix: Explicitly trigger play on the background video via user gesture
+    if (videoA) videoA.play().catch(e => console.log("Video play blocked"));
+    if (videoB) videoB.play().then(() => videoB.pause()); // Prime the second video
+
     document.getElementById('start-overlay').style.opacity = '0';
     setTimeout(() => {
         document.getElementById('start-overlay').style.display = 'none';
@@ -663,6 +668,14 @@ function switchVideo(newSrc, isLooping, onEndCallback = null) {
     nextVideoEl.loop = isLooping;
     nextVideoEl.onended = onEndCallback;
     nextVideoEl.play().then(() => {
+        nextVideoEl.classList.add('active');
+        currentVideoEl.classList.remove('active');
+        let temp = currentVideoEl;
+        currentVideoEl = nextVideoEl;
+        nextVideoEl = temp;
+    }).catch(e => {
+        console.error("Video switch failed:", e);
+        // Fallback: Force swap even if play fails
         nextVideoEl.classList.add('active');
         currentVideoEl.classList.remove('active');
         let temp = currentVideoEl;
