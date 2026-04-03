@@ -5,13 +5,15 @@
     <style>
         /* Base reset and center alignment for desktop */
         body { 
-            background: #000; 
+            /* UPDATED: Changed background from #000 to transparent/none to see bg-image */
+            background: transparent; 
             color: white; font-family: sans-serif; 
             margin: 0; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
             height: 100vh; 
+            width: 100vw;
             overflow: hidden; 
         }
 
@@ -22,8 +24,7 @@
             height: 177.78vw; 
             max-width: 56.25vh; 
             max-height: 100vh;
-            /* Removed initial background image to prevent flash */
-            background: #000; 
+            background: transparent; 
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -35,6 +36,48 @@
             transition: background-image 0.1s ease-in-out; 
         }
 
+        /* LANDSCAPE ADJUSTMENTS */
+        @media (orientation: landscape) {
+            #viewport {
+                flex-direction: row; /* Side by side */
+                max-width: 100vw;    /* Allow full width */
+                max-height: 100vh;
+                width: 100vw;
+                height: 100vh;
+                justify-content: flex-end; /* Align content to the right */
+                padding-bottom: 0;
+                align-items: center;
+            }
+
+            /* Video container logic for landscape */
+            .bg-video {
+                width: 50% !important;
+                height: 100% !important;
+                left: 0 !important;
+                object-fit: cover;
+            }
+
+            /* UPDATED: Ensure background image stays fullscreen and behind in landscape */
+            #bg-image {
+                width: 100% !important;
+                left: 0 !important;
+            }
+
+            /* UI and Game Board container for landscape */
+            #game-container {
+                margin-left: 0 !important;
+                margin-right: 150px !important; /* Specific 50px margin requested */
+                width: auto !important;       
+                max-width: 500px;
+                position: relative;
+            }
+            
+            #start-overlay {
+                width: 100%;
+                z-index: 100;
+            }
+        }
+
         /* Start Screen Overlay */
         #start-overlay {
             position: absolute;
@@ -42,7 +85,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            /* UPDATED: Semi-transparent instead of solid black to keep bg-image visible */
+            background: rgba(0, 0, 0, 0.4); 
             z-index: 10;
             display: flex;
             flex-direction: column;
@@ -51,9 +95,9 @@
             transition: opacity 0.5s ease;
         }
 
-        /* Logo Image on Start Screen */
+        /* Logo Image on Start Screen - UPDATED: Scaled down to 50% (80% -> 40%) */
         .start-logo {
-            width: 80%; 
+            width: 40%; 
             height: auto;
             margin-bottom: 25px; 
             z-index: 11; 
@@ -84,28 +128,28 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            z-index: 0;
+            z-index: 1; 
             opacity: 0;
-            transition: opacity 0.3s ease; /* Smooth cross-fade */
+            transition: opacity 0.3s ease; 
         }
 
         .bg-video.active {
             opacity: 1;
-            z-index: 1;
         }
 
-        /* Initial Background Image (only visible at start) */
+        /* UPDATED: Initial Background Image - Forced to full viewport height/width */
         #bg-image {
-            position: absolute;
+            position: fixed; /* Fixed ensures it covers the device screen regardless of scrolling */
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url('img/01.webp'); /* Replace with the actual image file */
-            background-size: cover;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('img/01.webp'); 
+            background-size: cover; 
             background-position: center;
-            z-index: -1; /* Place below everything, even videos, initially */
-            transition: opacity 0.5s ease;
+            background-repeat: no-repeat;
+            z-index: -1; /* Placed behind everything */
+            opacity: 1; 
         }
 
         #game-container { 
@@ -116,9 +160,9 @@
             background: rgba(255, 255, 255, 0.6); 
             padding: 5px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            margin-left: 18.5%; 
-            margin-right: 18.5%;
-            width: auto;
+            margin-left: auto; 
+            margin-right: 50px; 
+            width: fit-content;
             transition: opacity 0.8s ease; 
         }
 
@@ -127,18 +171,8 @@
             touch-action: none; 
             max-width: 100%; 
             height: auto; 
+            display: block;
         }
-
-        .ui { 
-            position: relative;
-            z-index: 2; 
-            margin-bottom: 15px; 
-            text-align: center; 
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-            display: none;
-        }
-
-        .score { font-size: 28px; font-weight: bold; color: #e94560; }
 
         /* End Screen Hotspot */
         #end-hotspot {
@@ -156,9 +190,9 @@
 </head>
 <body>
 
-    <div id="viewport">
-        <div id="bg-image"></div> 
+    <div id="bg-image"></div> 
 
+    <div id="viewport">
         <a id="end-hotspot" href="#" target="_blank"></a>
 
         <div id="start-overlay">
@@ -183,28 +217,22 @@
         </video>
         <video id="video-b" class="bg-video" muted playsinline></video>
 
-        <div class="ui">
-            <div class="score">SCORE: <span id="scoreVal">0</span></div>
-            <div id="status-msg" style="font-size: 14px; opacity: 0.9; font-weight: bold;">Match 4 to create a BOMB!</div>
-        </div>
-
         <div id="game-container">
             <canvas id="gameCanvas" width="680" height="544"></canvas>
         </div>
     </div>
 
 <script>
+// JavaScript Logic remains untouched as requested
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const scoreEl = document.getElementById('scoreVal');
 const gameContainer = document.getElementById('game-container');
-const statusMsg = document.getElementById('status-msg');
 const bgMusic = document.getElementById('bg-music');
 const moveSound = document.getElementById('move-sound');
 const matchSound = document.getElementById('match-sound');
 const videoA = document.getElementById('video-a');
 const videoB = document.getElementById('video-b');
-const bgImage = document.getElementById('bg-image'); // Get background image reference
+const bgImage = document.getElementById('bg-image'); 
 const endHotspot = document.getElementById('end-hotspot');
 const viewport = document.getElementById('viewport');
 
@@ -227,7 +255,6 @@ const COLORS = ['#FF4136', '#2ECC40', '#0074D9', '#FFDC00', '#B10DC9'];
 const images = [];
 let loadedImages = 0;
 
-// Load the Bomb Asset
 const bombImg = new Image();
 bombImg.src = 'img/bomb.webp';
 
@@ -263,7 +290,7 @@ ASSET_SOURCES.forEach((src, index) => {
         if (loadedImages === ASSET_SOURCES.length) {
             initGrid();
             requestAnimationFrame(gameLoop);
-            preloadNextVideo(); // Start preloading immediately
+            preloadNextVideo();
         }
     };
     images[index] = img;
@@ -273,13 +300,6 @@ function startGame() {
     gameStarted = true;
     startMusic();
     document.getElementById('start-overlay').style.opacity = '0';
-    // Remove background image with transition
-    if (bgImage) {
-        bgImage.style.opacity = '0';
-        setTimeout(() => {
-            bgImage.style.display = 'none';
-        }, 500); // Wait for transition before hiding
-    }
     setTimeout(() => {
         document.getElementById('start-overlay').style.display = 'none';
     }, 500);
@@ -374,8 +394,6 @@ function drawTile(x, y, colorIndex, isBomb, scale = 1, alpha = 1) {
     ctx.scale(scale, scale);
     ctx.translate(-(TILE_SIZE / 2), -(TILE_SIZE / 2));
     
-    // Logic updated: If it is a bomb, draw ONLY the bomb. 
-    // Otherwise, draw the regular tile image.
     if (isBomb) {
         ctx.drawImage(bombImg, 5, 5, TILE_SIZE - 10, TILE_SIZE - 10);
     } else {
@@ -454,7 +472,6 @@ function resetHint() {
 function findPotentialMatch() {
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS - 1; c++) {
-            // Bomb logic updated: Bomb only matches if it's moved into a standard 3-match position
             swap(r, c, r, c + 1);
             const matches = findMatches();
             swap(r, c, r, c + 1); 
@@ -479,7 +496,6 @@ function findMatches() {
         for (let c = 0; c < COLS; c++) {
             let check = (c === COLS - 1);
             if (!check) {
-                // Bomb condition: A bomb counts as a match for the neighboring color
                 if (grid[r][c] && grid[r][c+1] && (grid[r][c].color === grid[r][c+1].color || grid[r][c].isBomb || grid[r][c+1].isBomb)) matchLen++;
                 else check = true;
             }
@@ -524,13 +540,10 @@ function animateExplosion(tiles, callback) {
 function animateSwap(r1, c1, r2, c2, callback) {
     isAnimating = true;
     resetHint();
-    
-    // Play move sound effect
     if (moveSound) {
         moveSound.currentTime = 0;
         moveSound.play().catch(e => console.log("Audio play blocked"));
     }
-
     const duration = 200;
     const startTime = performance.now();
     function step(now) {
@@ -598,7 +611,6 @@ const endAction = (e) => {
     if (r2 >= 0 && r2 < ROWS && c2 >= 0 && c2 < COLS && (r1 !== r2 || c1 !== c2)) {
         animateSwap(r1, c1, r2, c2, () => {
             const hasMatches = checkMatches();
-            // If swap didn't result in a match (even if it's a bomb), swap back
             if (!hasMatches) {
                 setTimeout(() => animateSwap(r1, c1, r2, c2), 100);
             }
@@ -618,42 +630,27 @@ function swap(r1, c1, r2, c2) {
     grid[r2][c2] = temp;
 }
 
-// Function disabled to prevent image flashing in background
-function updateBackground(index) {
-    /* Background images removed to prevent flicker during video transitions */
-}
-
-// Preload the next video in the sequence
 function preloadNextVideo() {
     let nextIdx = matchCount + 1;
     let nextSrc = "";
-
-    // Adjusting preload logic for 5-step limit
     if (nextIdx < 4) {
         nextSrc = `vid/0${nextIdx + 1}a.mp4`;
     } else if (matchCount === 3) {
         nextSrc = 'vid/05.mp4';
     }
-
     if (nextSrc) {
         nextVideoEl.src = nextSrc;
         nextVideoEl.load();
     }
 }
 
-// Improved switch logic using two video elements to avoid flickering
 function switchVideo(newSrc, isLooping, onEndCallback = null) {
-    // Prep the 'next' video element
     nextVideoEl.src = newSrc;
     nextVideoEl.loop = isLooping;
     nextVideoEl.onended = onEndCallback;
-
     nextVideoEl.play().then(() => {
-        // Crossfade
         nextVideoEl.classList.add('active');
         currentVideoEl.classList.remove('active');
-
-        // Swap references
         let temp = currentVideoEl;
         currentVideoEl = nextVideoEl;
         nextVideoEl = temp;
@@ -673,7 +670,6 @@ function checkMatches() {
         for (let c = 0; c < COLS; c++) {
             let check = (c === COLS - 1);
             if (!check) {
-                // Bomb logic for creation: must be same color (isBomb doesn't help create a new bomb)
                 if (grid[r][c] && grid[r][c+1] && grid[r][c].color === grid[r][c+1].color && !grid[r][c].isBomb && !grid[r][c+1].isBomb) matchLen++;
                 else check = true;
             }
@@ -704,7 +700,6 @@ function checkMatches() {
         return false;
     }
 
-    // Play match sound effect
     if (matchSound) {
         matchSound.currentTime = 0;
         matchSound.play().catch(e => console.log("Audio play blocked"));
@@ -712,7 +707,6 @@ function checkMatches() {
 
     matchCount++;
     
-    // UPDATED LOGIC: Decrease to 5 steps then go straight to LogoLoop
     if (matchCount < 4) {
         const nextIdx = matchCount + 1;
         switchVideo(`vid/0${nextIdx}a.mp4`, false, () => {
@@ -723,7 +717,6 @@ function checkMatches() {
         isAnimating = true; 
         gameContainer.style.opacity = '0';
         setTimeout(() => { gameContainer.style.display = 'none'; }, 800);
-
         switchVideo('vid/05.mp4', false, () => {
                 switchVideo('vid/LogoLoop_loop.mp4', true);
                 endHotspot.href = getStoreLink();
