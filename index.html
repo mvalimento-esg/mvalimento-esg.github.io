@@ -227,7 +227,7 @@
         </audio>
 
         <video id="video-a" class="bg-video active" autoplay muted loop playsinline webkit-playsinline>
-            <source src="vid/01.mp4" type="video/webm">
+            <source src="vid/01.mp4" type="video/mp4">
         </video>
         <video id="video-b" class="bg-video" muted playsinline webkit-playsinline></video>
 
@@ -237,7 +237,6 @@
     </div>
 
 <script>
-// Logic remains untouched as requested
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const gameContainer = document.getElementById('game-container');
@@ -314,9 +313,14 @@ function startGame() {
     gameStarted = true;
     startMusic();
     
-    // Safari Fix: Explicitly trigger play on the background video via user gesture
-    if (videoA) videoA.play().catch(e => console.log("Video play blocked"));
-    if (videoB) videoB.play().then(() => videoB.pause()); // Prime the second video
+    // Explicitly play and show the video on interaction for Safari
+    if (videoA) {
+        videoA.classList.add('active');
+        videoA.play().catch(e => console.log("Video play blocked"));
+    }
+    
+    // Hide background image once video starts
+    if (bgImage) bgImage.style.opacity = '0';
 
     document.getElementById('start-overlay').style.opacity = '0';
     setTimeout(() => {
@@ -675,7 +679,6 @@ function switchVideo(newSrc, isLooping, onEndCallback = null) {
         nextVideoEl = temp;
     }).catch(e => {
         console.error("Video switch failed:", e);
-        // Fallback: Force swap even if play fails
         nextVideoEl.classList.add('active');
         currentVideoEl.classList.remove('active');
         let temp = currentVideoEl;
