@@ -40,10 +40,20 @@
             transition: background-image 0.1s ease-in-out; 
         }
 
-        /* NEW PORTRAIT ADJUSTMENTS FOR MOBILE LOGO */
+        /* NEW PORTRAIT ADJUSTMENTS FOR MOBILE LOGO, BOARD AND HAND */
         @media (orientation: portrait) {
             .start-logo {
                 width: 60% !important; 
+            }
+            /* Scale down the game board for portrait */
+            #game-container {
+                transform: scale(0.85);
+                transform-origin: center bottom;
+            }
+            /* Scale down the hand hint to match the board scaling */
+            #hand-hint {
+                width: 120px !important; 
+                height: 120px !important;
             }
         }
 
