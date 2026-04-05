@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>RuPaul Match</title>
+    <script src="mraid.js"></script>
     <style>
         /* Base reset and center alignment for desktop */
         body { 
@@ -212,7 +213,7 @@
     <div id="bg-image"></div> 
 
     <div id="viewport">
-        <a id="end-hotspot" href="#" target="_blank"></a>
+        <div id="end-hotspot" onclick="handleExit()"></div>
 
         <div id="start-overlay">
             <img src="img/RPDRMQ_logo.webp" alt="RuPaul's Drag Race Match Queen Logo" class="start-logo">
@@ -242,6 +243,38 @@
     </div>
 
 <script>
+/** 2. MRAID Logic **/
+function mraidIsViewable() {
+    if (mraid.isViewable()) {
+        if (gameStarted && musicStarted) bgMusic.play();
+    } else {
+        bgMusic.pause();
+    }
+}
+
+function handleExit() {
+    const targetUrl = getStoreLink();
+    if (typeof mraid !== "undefined" && mraid.open) {
+        mraid.open(targetUrl);
+    } else {
+        window.open(targetUrl, '_blank');
+    }
+}
+
+// Initialize MRAID
+if (typeof mraid !== "undefined") {
+    if (mraid.getState() === 'loading') {
+        mraid.addEventListener('ready', onMraidReady);
+    } else {
+        onMraidReady();
+    }
+}
+
+function onMraidReady() {
+    mraid.addEventListener('viewableChange', mraidIsViewable);
+}
+/** End MRAID Logic **/
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const gameContainer = document.getElementById('game-container');
@@ -731,7 +764,7 @@ function checkMatches(isChainReaction = true) {
             setTimeout(() => { gameContainer.style.display = 'none'; }, 800);
             switchVideo('vid/05.mp4', false, () => {
                 switchVideo('vid/LogoLoop_loop.mp4', true);
-                endHotspot.href = getStoreLink();
+                // endHotspot link logic handled via handleExit()
                 endHotspot.style.display = 'block';
             });
         }
