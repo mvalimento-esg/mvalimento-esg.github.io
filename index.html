@@ -55,11 +55,9 @@
                 left: 10% !important;        
                 object-fit: contain;         
                 object-position: center center; 
-                /* Added transition for the 'left' property to animate the slide */
                 transition: opacity 0.3s ease-in-out, left 1.2s cubic-bezier(0.4, 0, 0.2, 1);
             }
 
-            /* Class to trigger the centering animation */
             .bg-video.centered {
                 left: 50% !important;
                 transform: translateX(-50%);
@@ -72,15 +70,21 @@
 
             #game-container {
                 margin-left: auto !important; 
-                margin-right: 150px !important; 
+                margin-right: 5% !important; /* Changed to percentage for responsiveness */
                 width: auto !important;       
-                max-width: 500px;
+                max-width: 45vw; /* Ensure it doesn't take over half the screen */
                 position: relative;
+                transform: scale(0.85); /* Scale down the board to fit landscape heights */
+                transform-origin: right center;
             }
             
             #start-overlay {
                 width: 100%;
                 z-index: 100;
+            }
+
+            .start-logo {
+                width: 20% !important; /* Smaller logo in landscape to leave room for button */
             }
         }
 
@@ -101,7 +105,7 @@
         }
 
         .start-logo {
-            width: 30%; 
+            width: 60%; /* Scaled up for portrait as requested */
             height: auto;
             margin-bottom: 25px; 
             z-index: 11; 
@@ -165,9 +169,10 @@
             padding: 5px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             margin-left: auto; 
-            margin-right: 50px; 
+            margin-right: auto; 
             width: fit-content;
             transition: opacity 0.8s ease; 
+            max-width: 90vw; /* Responsive width for portrait */
         }
 
         canvas { 
@@ -624,11 +629,6 @@ function swap(r1, c1, r2, c2) {
     grid[r2][c2] = temp;
 }
 
-/**
- * UPDATED: Video Switcher Logic
- * Prevents flickering by keeping the old video visible until the new one 
- * has actually started rendering (timeupdate event).
- */
 function switchVideo(newSrc, isLooping, onEndCallback = null) {
     const oldVideo = currentVideoEl;
     const newVideo = nextVideoEl;
@@ -640,20 +640,17 @@ function switchVideo(newSrc, isLooping, onEndCallback = null) {
 
     newVideo.oncanplaythrough = function() {
         newVideo.play().then(() => {
-            // Wait for the first frame to render before hiding the old video
             const checkStarted = () => {
                 if (newVideo.currentTime > 0) {
                     newVideo.classList.add('active');
                     oldVideo.classList.remove('active');
                     
-                    // Added: apply centered class if we are loading the final loop
                     if (newSrc.includes('LogoLoop_loop.mp4')) {
                         newVideo.classList.add('centered');
                     } else {
                         newVideo.classList.remove('centered');
                     }
 
-                    // Swap references for next call
                     currentVideoEl = newVideo;
                     nextVideoEl = oldVideo;
                     newVideo.removeEventListener('timeupdate', checkStarted);
