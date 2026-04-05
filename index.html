@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>RuPaul Match</title>
     <script src="mraid.js"></script>
     <style>
         /* Base reset and center alignment for desktop */
         body { 
-            background: transparent; 
+            background: #000; 
             color: white; font-family: sans-serif; 
             margin: 0; 
             display: flex; 
@@ -15,6 +17,8 @@
             height: 100vh; 
             width: 100vw;
             overflow: hidden; 
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         /* The 1080x1920 Container */
@@ -39,7 +43,7 @@
         /* NEW PORTRAIT ADJUSTMENTS FOR MOBILE LOGO */
         @media (orientation: portrait) {
             .start-logo {
-                width: 60% !important; /* Scaled up for mobile portrait */
+                width: 60% !important; 
             }
         }
 
@@ -51,7 +55,7 @@
                 max-height: 100vh;
                 width: 100vw;
                 height: 100vh;
-                justify-content: center; /* Center horizontally in landscape */
+                justify-content: center; 
                 padding-bottom: 0;
                 align-items: center;
             }
@@ -78,10 +82,10 @@
 
             #game-container {
                 margin-left: auto !important; 
-                margin-right: 5% !important; /* Use percentage for better mobile scaling */
+                margin-right: 5% !important; 
                 width: auto !important;       
-                max-width: 45vw; /* Scale based on viewport width */
-                max-height: 80vh; /* Ensure it fits vertically */
+                max-width: 45vw; 
+                max-height: 80vh; 
                 position: relative;
                 display: flex;
                 align-items: center;
@@ -93,7 +97,6 @@
                 z-index: 100;
             }
 
-            /* Responsive Canvas for small landscape screens */
             canvas {
                 max-width: 100%;
                 max-height: 80vh;
@@ -141,7 +144,6 @@
             transform: scale(1.1);
         }
 
-        /* Dual Background Video Styling */
         .bg-video {
             position: absolute;
             top: 0;
@@ -201,7 +203,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 100;
+            z-index: 1000;
             display: none; 
             background: transparent;
             cursor: pointer;
@@ -220,15 +222,15 @@
             <button class="cta-button" onclick="startGame()">Start Matching!</button>
         </div>
 
-        <audio id="bg-music" loop>
+        <audio id="bg-music" loop preload="auto">
             <source src="audio/RPDR_MainGame_compressed.mp3" type="audio/mpeg">
         </audio>
         
-        <audio id="move-sound">
+        <audio id="move-sound" preload="auto">
             <source src="audio/move.mp3" type="audio/mpeg">
         </audio>
 
-        <audio id="match-sound">
+        <audio id="match-sound" preload="auto">
             <source src="audio/matched.mp3" type="audio/mpeg">
         </audio>
 
@@ -243,17 +245,23 @@
     </div>
 
 <script>
-/** 2. MRAID Logic **/
-function mraidIsViewable() {
-    if (mraid.isViewable()) {
-        if (gameStarted && musicStarted) bgMusic.play();
-    } else {
-        bgMusic.pause();
+/** 2. MRAID & META Logic **/
+const APP_STORE_LINK = "https://apps.apple.com/ph/app/rupauls-drag-race-match-queen/id6476321629";
+const PLAY_STORE_LINK = "https://play.google.com/store/apps/details?id=com.eastsidegames.rupaulmatch";
+
+function getStoreLink() {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+        return APP_STORE_LINK;
     }
+    return PLAY_STORE_LINK;
 }
 
+// Global handleExit for AppLovin (mraid.open) and Meta (window.open)
 function handleExit() {
+    console.log("Ad Exit Triggered");
     const targetUrl = getStoreLink();
+    
     if (typeof mraid !== "undefined" && mraid.open) {
         mraid.open(targetUrl);
     } else {
@@ -261,20 +269,41 @@ function handleExit() {
     }
 }
 
-// Initialize MRAID
+function mraidIsViewable() {
+    if (typeof mraid !== "undefined" && mraid.isViewable()) {
+        showAd();
+        // Resume audio if the game had already started
+        if (gameStarted && musicStarted && bgMusic) {
+            bgMusic.play().catch(e => {});
+        }
+    } else if (typeof mraid !== "undefined") {
+        if (bgMusic) bgMusic.pause();
+    }
+}
+
+function showAd() {
+    document.body.style.visibility = 'visible';
+}
+
+function onMraidReady() {
+    mraid.addEventListener('viewableChange', mraidIsViewable);
+    if (mraid.isViewable()) {
+        showAd();
+    }
+}
+
+// Initialization for MRAID
 if (typeof mraid !== "undefined") {
     if (mraid.getState() === 'loading') {
         mraid.addEventListener('ready', onMraidReady);
     } else {
         onMraidReady();
     }
+} else {
+    showAd();
 }
 
-function onMraidReady() {
-    mraid.addEventListener('viewableChange', mraidIsViewable);
-}
-/** End MRAID Logic **/
-
+/** Game Logic **/
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const gameContainer = document.getElementById('game-container');
@@ -322,17 +351,6 @@ let lastActionTime = Date.now();
 let activeHint = null;
 const HINT_DELAY = 3000; 
 
-const APP_STORE_LINK = "https://apps.apple.com/ph/app/rupauls-drag-race-match-queen/id6476321629";
-const PLAY_STORE_LINK = "https://play.google.com/store/apps/details?id=com.eastsidegames.rupaulmatch";
-
-function getStoreLink() {
-    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-    if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
-        return APP_STORE_LINK;
-    }
-    return PLAY_STORE_LINK;
-}
-
 ASSET_SOURCES.forEach((src, index) => {
     const img = new Image();
     img.src = src;
@@ -373,7 +391,7 @@ class Particle {
     }
     draw() {
         ctx.save();
-        ctx.globalAlpha = this.alpha;
+        ctx.globalAlpha = Math.max(0, this.alpha);
         ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
@@ -400,7 +418,7 @@ function updateAndDrawParticles() {
 }
 
 function startMusic() {
-    if (!musicStarted) {
+    if (!musicStarted && bgMusic) {
         bgMusic.play().catch(e => console.log("Audio play blocked until interaction."));
         musicStarted = true;
     }
@@ -586,7 +604,7 @@ function animateSwap(r1, c1, r2, c2, callback) {
     resetHint();
     if (moveSound) {
         moveSound.currentTime = 0;
-        moveSound.play().catch(e => console.log("Audio play blocked"));
+        moveSound.play().catch(e => {});
     }
     const duration = 200;
     const startTime = performance.now();
@@ -748,7 +766,7 @@ function checkMatches(isChainReaction = true) {
     }
     if (matchSound) {
         matchSound.currentTime = 0;
-        matchSound.play().catch(e => console.log("Audio play blocked"));
+        matchSound.play().catch(e => {});
     }
     if (!isChainReaction) {
         matchCount++;
@@ -764,7 +782,6 @@ function checkMatches(isChainReaction = true) {
             setTimeout(() => { gameContainer.style.display = 'none'; }, 800);
             switchVideo('vid/05.mp4', false, () => {
                 switchVideo('vid/LogoLoop_loop.mp4', true);
-                // endHotspot link logic handled via handleExit()
                 endHotspot.style.display = 'block';
             });
         }
