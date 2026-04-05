@@ -208,6 +208,24 @@
             background: transparent;
             cursor: pointer;
         }
+
+        /* HAND HINT STYLES */
+        #hand-hint {
+            position: absolute;
+            width: 160px; /* Increased size: Bigger than TILE_SIZE (136) */
+            height: 160px; /* Increased size */
+            pointer-events: none;
+            z-index: 20;
+            display: none;
+            opacity: 0.9;
+        }
+
+        @keyframes handSlide {
+            /* Changed -50%, -50% to -40%, -40% to move it right and down */
+            0% { transform: translate(-40%, -40%) translate(0, 0); }
+            50% { transform: translate(-40%, -40%) translate(var(--slide-x), var(--slide-y)); }
+            100% { transform: translate(-40%, -40%) translate(0, 0); }
+        }
     </style>
 </head>
 <body>
@@ -240,6 +258,7 @@
         <video id="video-b" class="bg-video" muted playsinline preload="auto"></video>
 
         <div id="game-container">
+            <img id="hand-hint" src="img/FTUE_hand_tap.webp" alt="Hint Hand">
             <canvas id="gameCanvas" width="680" height="544"></canvas>
         </div>
     </div>
@@ -257,7 +276,6 @@ function getStoreLink() {
     return PLAY_STORE_LINK;
 }
 
-// Global handleExit for AppLovin (mraid.open) and Meta (window.open)
 function handleExit() {
     console.log("Ad Exit Triggered");
     const targetUrl = getStoreLink();
@@ -272,7 +290,6 @@ function handleExit() {
 function mraidIsViewable() {
     if (typeof mraid !== "undefined" && mraid.isViewable()) {
         showAd();
-        // Resume audio if the game had already started
         if (gameStarted && musicStarted && bgMusic) {
             bgMusic.play().catch(e => {});
         }
@@ -292,7 +309,6 @@ function onMraidReady() {
     }
 }
 
-// Initialization for MRAID
 if (typeof mraid !== "undefined") {
     if (mraid.getState() === 'loading') {
         mraid.addEventListener('ready', onMraidReady);
@@ -315,6 +331,7 @@ const videoB = document.getElementById('video-b');
 const bgImage = document.getElementById('bg-image'); 
 const endHotspot = document.getElementById('end-hotspot');
 const viewport = document.getElementById('viewport');
+const handHint = document.getElementById('hand-hint'); 
 
 let currentVideoEl = videoA;
 let nextVideoEl = videoB;
@@ -370,8 +387,38 @@ function startGame() {
     document.getElementById('start-overlay').style.opacity = '0';
     setTimeout(() => {
         document.getElementById('start-overlay').style.display = 'none';
+        showHandHint(); 
     }, 500);
     lastActionTime = Date.now();
+}
+
+function showHandHint() {
+    const hint = findPotentialMatch();
+    if (hint && matchCount === 0) {
+        const rect = canvas.getBoundingClientRect();
+        const scale = rect.width / canvas.width;
+        
+        // Calculate center position of the start tile relative to game container
+        const startX = (hint.c1 * TILE_SIZE + TILE_SIZE/2) * scale;
+        const startY = (hint.r1 * TILE_SIZE + TILE_SIZE/2) * scale;
+        
+        // Slide distance
+        const dx = (hint.c2 - hint.c1) * TILE_SIZE * scale;
+        const dy = (hint.r2 - hint.r1) * TILE_SIZE * scale;
+
+        handHint.style.left = `${startX}px`;
+        handHint.style.top = `${startY}px`;
+        handHint.style.setProperty('--slide-x', `${dx}px`);
+        handHint.style.setProperty('--slide-y', `${dy}px`);
+        
+        handHint.style.animation = 'handSlide 1.5s ease-in-out infinite';
+        handHint.style.display = 'block';
+    }
+}
+
+function hideHandHint() {
+    handHint.style.display = 'none';
+    handHint.style.animation = 'none';
 }
 
 class Particle {
@@ -657,6 +704,7 @@ const startAction = (e) => {
     if (!gameStarted || isAnimating) return; 
     resetHint(); 
     swipeStart = getCoords(e); 
+    hideHandHint(); 
 };
 const endAction = (e) => {
     if (!gameStarted || !swipeStart || isAnimating) return;
@@ -768,8 +816,11 @@ function checkMatches(isChainReaction = true) {
         matchSound.currentTime = 0;
         matchSound.play().catch(e => {});
     }
+
     if (!isChainReaction) {
         matchCount++;
+        hideHandHint(); 
+
         if (matchCount === 1) {
             switchVideo('vid/02a.mp4', false, () => { switchVideo('vid/02.mp4', true); });
         } else if (matchCount === 2) {
@@ -838,6 +889,11 @@ function checkMatches(isChainReaction = true) {
     else processRemoval();
     return true;
 }
+
+window.addEventListener('resize', () => {
+    if (matchCount === 0 && gameStarted) showHandHint();
+});
+
 </script>
 </body>
 </html>
