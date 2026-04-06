@@ -102,7 +102,7 @@
                 justify-content: center;
             }
             
-            #start-overlay {
+            #start-overlay, #end-overlay {
                 width: 100%;
                 z-index: 100;
             }
@@ -114,8 +114,8 @@
             }
         }
 
-        /* Start Screen Overlay */
-        #start-overlay {
+        /* Overlays */
+        #start-overlay, #end-overlay {
             position: absolute;
             top: 0;
             left: 0;
@@ -128,6 +128,15 @@
             align-items: center;
             justify-content: center;
             transition: opacity 0.5s ease;
+        }
+
+        #end-overlay {
+            background: transparent;
+            display: none;
+            z-index: 1001;
+            opacity: 0;
+            /* Added padding-top to shift the button down 50px */
+            padding-top: 200px;
         }
 
         .start-logo {
@@ -150,7 +159,20 @@
             z-index: 10;
         }
 
-        .cta-button:hover {
+        .play-now-button {
+            width: 200px; 
+            height: 100px; 
+            background: url('img/PLAYNOW.webp') no-repeat center center;
+            background-size: contain;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            text-indent: -9999px; 
+            background-color: transparent;
+            z-index: 1002;
+        }
+
+        .cta-button:hover, .play-now-button:hover {
             transform: scale(1.1);
         }
 
@@ -231,16 +253,13 @@
         }
 
         @keyframes handSlide {
-            /* Changed -50%, -50% to -40%, -40% to move it right and down */
             0% { transform: translate(-40%, -40%) translate(0, 0); }
             50% { transform: translate(-40%, -40%) translate(var(--slide-x), var(--slide-y)); }
             100% { transform: translate(-40%, -40%) translate(0, 0); }
         }
     </style>
 </head>
-<body>
-
-    <div id="bg-image"></div> 
+<body style="visibility: hidden;"> <div id="bg-image"></div> 
 
     <div id="viewport">
         <div id="end-hotspot" onclick="handleExit()"></div>
@@ -248,6 +267,10 @@
         <div id="start-overlay">
             <img src="img/RPDRMQ_logo.webp" alt="RuPaul's Drag Race Match Queen Logo" class="start-logo">
             <button class="cta-button" onclick="startGame()">Start Matching!</button>
+        </div>
+
+        <div id="end-overlay">
+            <button class="play-now-button" onclick="handleExit()">Play Now!</button>
         </div>
 
         <audio id="bg-music" loop preload="auto">
@@ -290,6 +313,10 @@ function handleExit() {
     console.log("Ad Exit Triggered");
     const targetUrl = getStoreLink();
     
+    if (typeof fbq !== "undefined") {
+        fbq('track', 'Download');
+    }
+
     if (typeof mraid !== "undefined" && mraid.open) {
         mraid.open(targetUrl);
     } else {
@@ -314,6 +341,14 @@ function showAd() {
 
 function onMraidReady() {
     mraid.addEventListener('viewableChange', mraidIsViewable);
+    
+    if (mraid.setOrientationProperties) {
+        mraid.setOrientationProperties({
+            "allowOrientationChange": true,
+            "forceOrientation": "none"
+        });
+    }
+
     if (mraid.isViewable()) {
         showAd();
     }
@@ -340,6 +375,7 @@ const videoA = document.getElementById('video-a');
 const videoB = document.getElementById('video-b');
 const bgImage = document.getElementById('bg-image'); 
 const endHotspot = document.getElementById('end-hotspot');
+const endOverlay = document.getElementById('end-overlay');
 const viewport = document.getElementById('viewport');
 const handHint = document.getElementById('hand-hint'); 
 
@@ -408,11 +444,9 @@ function showHandHint() {
         const rect = canvas.getBoundingClientRect();
         const scale = rect.width / canvas.width;
         
-        // Calculate center position of the start tile relative to game container
         const startX = (hint.c1 * TILE_SIZE + TILE_SIZE/2) * scale;
         const startY = (hint.r1 * TILE_SIZE + TILE_SIZE/2) * scale;
         
-        // Slide distance
         const dx = (hint.c2 - hint.c1) * TILE_SIZE * scale;
         const dy = (hint.r2 - hint.r1) * TILE_SIZE * scale;
 
@@ -610,31 +644,31 @@ function findPotentialMatch() {
 
 function findMatches() {
     let toRemove = new Set();
+    // Wildcard Logic for findMatches (Horizontal)
     for (let r = 0; r < ROWS; r++) {
-        let matchLen = 1;
-        for (let c = 0; c < COLS; c++) {
-            let check = (c === COLS - 1);
-            if (!check) {
-                if (grid[r][c] && grid[r][c+1] && (grid[r][c].color === grid[r][c+1].color)) matchLen++;
-                else check = true;
-            }
-            if (check) {
-                if (matchLen >= 3) for (let i = 0; i < matchLen; i++) toRemove.add(`${r},${c-i}`);
-                matchLen = 1;
+        for (let c = 0; c < COLS - 2; c++) {
+            let t1 = grid[r][c], t2 = grid[r][c+1], t3 = grid[r][c+2];
+            if (!t1 || !t2 || !t3) continue;
+            let colors = [t1, t2, t3].filter(t => !t.isBomb).map(t => t.color);
+            let uniqueColors = [...new Set(colors)];
+            if (uniqueColors.length <= 1) {
+                toRemove.add(`${r},${c}`);
+                toRemove.add(`${r},${c+1}`);
+                toRemove.add(`${r},${c+2}`);
             }
         }
     }
+    // Vertical
     for (let c = 0; c < COLS; c++) {
-        let matchLen = 1;
-        for (let r = 0; r < ROWS; r++) {
-            let check = (r === ROWS - 1);
-            if (!check) {
-                if (grid[r][c] && grid[r+1][c] && (grid[r][c].color === grid[r+1][c].color)) matchLen++;
-                else check = true;
-            }
-            if (check) {
-                if (matchLen >= 3) for (let i = 0; i < matchLen; i++) toRemove.add(`${r-i},${c}`);
-                matchLen = 1;
+        for (let r = 0; r < ROWS - 2; r++) {
+            let t1 = grid[r][c], t2 = grid[r+1][c], t3 = grid[r+2][c];
+            if (!t1 || !t2 || !t3) continue;
+            let colors = [t1, t2, t3].filter(t => !t.isBomb).map(t => t.color);
+            let uniqueColors = [...new Set(colors)];
+            if (uniqueColors.length <= 1) {
+                toRemove.add(`${r},${c}`);
+                toRemove.add(`${r+1},${c}`);
+                toRemove.add(`${r+2},${c}`);
             }
         }
     }
@@ -789,6 +823,37 @@ function checkMatches(isChainReaction = true) {
     let explosionData = [];
     const matchesFromGrid = findMatches();
     matchesFromGrid.forEach(m => toRemove.add(m));
+
+    // UPDATED: Only trigger bomb power-up if it's NOT a chain reaction (user triggered)
+    if (!isChainReaction) {
+        let bombColorsToDestroy = new Set();
+        toRemove.forEach(pos => {
+            const [r, c] = pos.split(',').map(Number);
+            if (grid[r][c] && grid[r][c].isBomb) {
+                // Check neighbors for colors to destroy
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        let nr = r + dr, nc = c + dc;
+                        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && grid[nr][nc] && !grid[nr][nc].isBomb) {
+                            bombColorsToDestroy.add(grid[nr][nc].color);
+                        }
+                    }
+                }
+            }
+        });
+
+        // If colors found, clear all those colors from board
+        if (bombColorsToDestroy.size > 0) {
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (grid[r][c] && bombColorsToDestroy.has(grid[r][c].color)) {
+                        toRemove.add(`${r},${c}`);
+                    }
+                }
+            }
+        }
+    }
+
     for (let r = 0; r < ROWS; r++) {
         let matchLen = 1;
         for (let c = 0; c < COLS; c++) {
@@ -844,28 +909,21 @@ function checkMatches(isChainReaction = true) {
             switchVideo('vid/05.mp4', false, () => {
                 switchVideo('vid/LogoLoop_loop.mp4', true);
                 endHotspot.style.display = 'block';
+                endOverlay.style.display = 'flex';
+                setTimeout(() => { endOverlay.style.opacity = '1'; }, 10);
             });
         }
     }
-    let hasBombTriggered = false;
+
+    // Process removal with particles
     toRemove.forEach(pos => {
         const [r, c] = pos.split(',').map(Number);
-        if (grid[r][c] && grid[r][c].isBomb) {
-            hasBombTriggered = true;
-            for (let dr = -1; dr <= 1; dr++) {
-                for (let dc = -1; dc <= 1; dc++) {
-                    let nr = r + dr, nc = c + dc;
-                    if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
-                        createParticles(nc * TILE_SIZE + TILE_SIZE/2, nr * TILE_SIZE + TILE_SIZE/2, COLORS[grid[nr][nc]?.color || 0]);
-                        if (!toRemove.has(`${nr},${nc}`)) {
-                            explosionData.push({ r: nr, c: nc, color: grid[nr][nc].color, isBomb: grid[nr][nc].isBomb, progress: 0 });
-                        }
-                        toRemove.add(`${nr},${nc}`);
-                    }
-                }
-            }
+        if (grid[r][c]) {
+            createParticles(c * TILE_SIZE + TILE_SIZE/2, r * TILE_SIZE + TILE_SIZE/2, COLORS[grid[r][c].color] || '#FFF');
+            explosionData.push({ r, c, color: grid[r][c].color, isBomb: grid[r][c].isBomb, progress: 0 });
         }
     });
+
     const processRemoval = () => {
         score += toRemove.size * 10;
         toRemove.forEach(pos => { const [r, c] = pos.split(',').map(Number); if(grid[r]) grid[r][c] = null; });
@@ -895,8 +953,8 @@ function checkMatches(isChainReaction = true) {
             }
         }), 100);
     };
-    if (hasBombTriggered) animateExplosion(explosionData, processRemoval);
-    else processRemoval();
+
+    animateExplosion(explosionData, processRemoval);
     return true;
 }
 
